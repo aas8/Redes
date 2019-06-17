@@ -1,0 +1,61 @@
+# -*- coding: utf-8 -*-
+"""
+Universidade Federal de Pernambuco (UFPE) (http://www.ufpe.br)
+Centro de Informática (CIn) (http://www.cin.ufpe.br)
+Bacharelado em Sistemas de Informacao
+IF 969 - Algoritmos e Estruturas de Dados
+Authors: Adriana Alves dos Santos (aas8) and Luana Mayara Santos Ribeiro (lmsr)
+The MIT License (MIT)
+Copyright(c) 2019
+
+"""
+
+import threading
+import socket
+
+class Player(threading.Thread):
+    def __init__(self, nome, port = 4400, ip = 'localhost', **kwargs):
+        threading.Thread.__init__(self)
+        self.nome = nome
+        self.__entrada = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.__entrada.bind((port, ip))
+        self.__pares = []
+        self.limite = kwargs.get('limite', 0)
+        self.conexoes = 0
+        self.servidor = False
+    
+    def iniciar_sala(self):
+        self.__entrada.listen()
+        while True:
+            if self.limite and self.conexoes < self.limite:
+                par, endereco = self.__entrada.accept()
+                self.clientes.append(par.recv(1024).decode())
+                threading.Thread(target = Player.message_receiver,
+                                 args = [par])
+                self.conexoes += 1
+            else:
+                par.send("Conexão recusada!".encode())
+                par.close()
+    
+    def conectar_sala(self, porta_destino, ip_destino):
+        pass
+    
+    def broadcast(self, mensagem:str):
+        for par in self.__pares:
+            par.send("{0}: {1}".format(self.nome, mensagem).encode())
+    
+    @staticmethod
+    def message_receiver(socket):
+        while True:
+            try:
+                msg = socket.receive(1024).decode()
+            except:
+                continue
+            else:
+                if msg:
+                    if msg.startswith('--'):
+                        yield msg
+                    else:
+                        print(msg)
+                else:
+                    break
