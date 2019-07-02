@@ -13,10 +13,9 @@ Copyright(c) 2019
 import threading
 import socket
 import json
-from Player import Player
 
 class Par (threading.Thread):
-    def __init__ (self, socket: socket.socket, servidor: Player):
+    def __init__ (self, socket: socket.socket, servidor: object):
         ''' Método construtor da classe Par
         
         :parameter socket: socket pelo qual o par se comunica
@@ -25,7 +24,7 @@ class Par (threading.Thread):
         threading.Thread.__init__(self)
         self.__socket = socket
         self.__servidor = servidor
-        self.__name = ''
+        self.__name = str(socket.getsockname())
         
         self.start()
     
@@ -53,7 +52,6 @@ class Par (threading.Thread):
         Monitora o socket a espera de mensagens do par. Quando uma mensagem é
         recebida, trata a mensagem de acordo com cada um dos cabeçalhos.
         '''
-        self.enviar_mensagem('Conexão Aceita!')
         while True:
             try:
                 dados = self.__socket.recv(1024)
@@ -61,7 +59,6 @@ class Par (threading.Thread):
                 continue
             else:
                 if dados:
-                    self.receber_mensagem(dados)
                     _json = json.loads(dados.decode())
                     for header in _json:
                         getattr(self.__servidor, header)(_json[header], self)
@@ -81,3 +78,15 @@ class Par (threading.Thread):
             comandos['texto'] = mensagem
         dados = json.dumps(comandos)
         self.__socket.send(dados.encode())
+    
+    @property
+    def address (self):
+        ''' Retorna o endereço do socket
+        '''
+        return self.__socket.getsockname()
+    
+    def desconectar (self):
+        ''' Método de desconexão
+        '''
+        self.__socket.close()
+        self.__servidor.desconectar(self)
